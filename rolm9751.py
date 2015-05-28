@@ -11,6 +11,7 @@ ROLMDB = 'rolm9751.db'
 CBXPASS = 'PASSWORD'
 CBXMOD = '40'
 CBXID = 'EDISO34872'
+CBXNODE = '01'
 CBXRAM = '16'
 CBXROM = '4.2'
 CBXREL = '9005.6.84'
@@ -122,7 +123,9 @@ def CNFG(sck):
 					elif CNFG_cmd2[0] == 'LEX':
 						True
 					elif CNFG_cmd2 == 'RP':
-						True
+						sck.socket.send('PAD:  ')
+						CNFG_cmd3 = sck.socket.recv(128).strip()
+						CNFG_LI_RP(sck,CNFG_cmd3)
 					else:
 						sck.socket.send('ERROR: MNEMONIC IS NOT KNOWN - PLEASE RE-ENTER\n\n')
 				if len(CNFG_cmd2) > 1:
@@ -141,7 +144,9 @@ def CNFG(sck):
 						elif CNFG_cmd2[0] == 'LEX':
 							True
 						elif CNFG_cmd2[0] == 'RP':
-							True
+							sck.socket.send('PAD:  ')
+							CNFG_cmd3 = sck.socket.recv(128).strip()
+							CNFG_LI_RP(sck,CNFG_cmd3)
 						else:
 							sck.socket.send('ERROR: MNEMONIC IS NOT KNOWN - PLEASE RE-ENTER\n\n')
 					elif len(CNFG_cmd2) == 2:
@@ -152,7 +157,7 @@ def CNFG(sck):
 						elif CNFG_cmd2[0] == 'LEX':
 							True
 						elif CNFG_cmd2[0] == 'RP':
-                                                        True
+                                                        CNFG_LI_RP(sck,CNFG_cmd2[1])
 						else:
 							sck.socket.send('ERROR: MNEMONIC IS NOT KNOWN - PLEASE RE-ENTER\n\n')
 					else:
@@ -164,7 +169,9 @@ def CNFG(sck):
 				elif CNFG_cmd[1] == 'LEX':
 					True
 				elif CNFG_cmd[1] == 'RP':
-					True
+					sck.socket.send('PAD:  ')
+					CNFG_cmd2 = sck.socket.recv(128).strip()
+					CNFG_LI_RP(sck,CNFG_cmd2)
 				else:
 					sck.socket.send('ERROR: MNEMONIC IS NOT KNOWN - PLEASE RE-ENTER\n\n')
 			elif len(CNFG_cmd) == 3:
@@ -173,7 +180,7 @@ def CNFG(sck):
 				elif CNFG_cmd[1] == 'LEX':
 					True
 				elif CNFG_cmd[1] == 'RP':
-					True
+					CNFG_LI_RP(sck,CNFG_cmd[2])
 				else:
 					sck.socket.send('ERROR: MNEMONIC IS NOT KNOWN - PLEASE RE-ENTER\n\n')	
 			else:
@@ -333,6 +340,98 @@ def CNFG_LI_EXTEN(sck,num):
 	sck.socket.send(row[15] + '\n\n')
 
 	sql.close()	
+
+def CNFG_LI_LEX(sck,num):
+	True
+def CNFG_LI_RP(sck,num):
+        sql = sqlite3.connect(ROLMDB)
+        cursor = sql.execute("SELECT * FROM rp WHERE pad = \'" + num + "\'")
+        row = cursor.fetchone()
+        if row == None:
+                sck.socket.send('NO MATCH\n\n')
+                return
+
+	sck.socket.send('\n\n                       D V                           S\n')
+	sck.socket.send('                       A M                           P                   ACD\n')
+	sck.socket.send('             RLID      T O  REF  TBL BUZZ            K D                 BSY HR\n')
+	sck.socket.send('   PAD       TYPE      A D  NO.  NO. INTERCM VOICE C R T EXTN 1  R MW BI USAGE%\n')
+	sck.socket.send('   --------- --------- - -- ---- --  ------- ------- - - ------- - -  -  ---\n')
+	sck.socket.send('DS ' + CBXNODE + '/')
+	# PAD address
+	sck.socket.send(row[0] + ' ')
+	# RLID type
+	sck.socket.send(row[1])
+	if len(row[1]) < 9:
+		rowlen = 10 - len(row[1])
+		for x in xrange(rowlen):
+			sck.socket.send(' ')
+	# DATA
+	sck.socket.send(row[2] + ' ')
+	# VMOD
+	sck.socket.send(row[3] + ' ')
+	# REF No.
+	sck.socket.send(row[4])
+        if len(row[4]) < 4:
+                rowlen = 5 - len(row[4])
+                for x in xrange(rowlen):
+                        sck.socket.send(' ')
+	# TBL No.
+	sck.socket.send(row[5])
+	if len(row[5]) < 2:
+		rowlen = 4 - len(row[5])
+		for x in xrange(rowlen):
+			sck.socket.send(' ')
+	# Buzz Intercom
+        if row[6] is None:
+                sck.socket.send('        ')
+        else:
+                sck.socket.send(row[6])
+                if len(row[6]) < 7:
+                        rowlen = 8 - len(row[6])
+                        for x in xrange(rowlen):
+                                sck.socket.send(' ')
+	# Voice C
+        if row[7] is None:
+                sck.socket.send('        ')
+        else:
+                sck.socket.send(row[7])
+                if len(row[7]) < 7:
+                        rowlen = 8 - len(row[7])
+                        for x in xrange(rowlen):
+                                sck.socket.send(' ')
+	# Speaker
+	sck.socket.send(row[8] + ' ')
+	# DT
+	sck.socket.send(row[9] + ' ')
+	# Extension 1
+        if row[10] is None:
+                sck.socket.send('       ')
+        else:
+                sck.socket.send(row[10])
+                if len(row[10]) < 7:
+                        rowlen = 8 - len(row[10])
+                        for x in xrange(rowlen):
+                                sck.socket.send(' ')
+	# Ring
+	sck.socket.send(row[11] + ' ')
+	# Message Waiting Indicator
+	sck.socket.send(row[12] + '  ')
+	# Busy Indicator
+	sck.socket.send(row[13] + '  ')
+	# ACD Busy Usage
+	sck.socket.send(row[14])
+	if len(row[14]) < 3:
+		rowlen = 3 - len(row[14])
+		for x in xrange(rowlen):
+			sck.socket.send(' ')
+	sck.socket.send('\n\n')
+
+	sck.socket.send('   CLLD \n')
+	sck.socket.send('   NAME\n')
+	sck.socket.send('   -\n')
+	sck.socket.send('DS ')
+	sck.socket.send(row[15] + '\n\n')
+	sql.close()
 class RolmServer(threading.Thread):
     def __init__(self, (socket,address)):
         threading.Thread.__init__(self)
